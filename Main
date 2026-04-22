@@ -1,4 +1,4 @@
-rom banco import conectar, criar_tabela
+from banco import conectar, criar_tabela
 
 def adicionar_transacao():
     conexao = conectar()
@@ -42,6 +42,9 @@ def menu():
         print("3 - Sair")
         print("4 - Ver saldo")
         print("5 - Filtrar por mês")
+        print("6 - Deletar transação")
+        print("7 - Editar transação")
+        print("8 - Relatório por categoria")
 
         opcao = input("Escolha: ")
 
@@ -55,6 +58,12 @@ def menu():
             ver_saldo()
         elif opcao == "5":
             filtrar_por_mes()
+        elif opcao == "6":
+            deletar_transacao()
+        elif opcao == "7":
+            editar_transacao()
+        elif opcao == "8":
+            relatorio_por_categoria()
         else:
             print("Opção inválida")
 
@@ -104,6 +113,63 @@ def filtrar_por_mes():
     else:
         for transacao in dados:
             print(transacao)
+
+    conexao.close()
+
+def deletar_transacao():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    id_transacao = input("Digite o ID da transação que deseja deletar: ")
+
+    cursor.execute("DELETE FROM transacoes WHERE id = ?", (id_transacao,))
+
+    conexao.commit()
+    conexao.close()
+
+    print("Transação deletada com sucesso!")
+
+def editar_transacao():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    id_transacao = input("Digite o ID da transação que deseja editar: ")
+
+    novo_tipo = input("Novo tipo (receita/despesa): ")
+    novo_valor = float(input("Novo valor: "))
+    nova_categoria = input("Nova categoria: ")
+    nova_data = input("Nova data (YYYY-MM-DD): ")
+
+    cursor.execute("""
+    UPDATE transacoes
+    SET tipo = ?, valor = ?, categoria = ?, data = ?
+    WHERE id = ?
+    """, (novo_tipo, novo_valor, nova_categoria, nova_data, id_transacao))
+
+    conexao.commit()
+    conexao.close()
+
+    print("Transação atualizada!")
+
+def relatorio_por_categoria():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+    SELECT categoria, SUM(valor)
+    FROM transacoes
+    WHERE tipo = 'despesa'
+    GROUP BY categoria
+    """)
+
+    dados = cursor.fetchall()
+
+    if not dados:
+        print("Nenhuma despesa encontrada.")
+    else:
+        print("\n📊 Gastos por categoria:")
+        for categoria, total in dados:
+            print(f"{categoria}: R$ {total}")
 
     conexao.close()
 
