@@ -1,0 +1,113 @@
+rom banco import conectar, criar_tabela
+
+def adicionar_transacao():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    tipo = input("Digite o tipo (receita/despesa): ")
+    valor = float(input("Digite o valor: "))
+    categoria = input("Categoria: ")
+    data = input("Data (YYYY-MM-DD): ")
+
+    cursor.execute("""
+    INSERT INTO transacoes (tipo, valor, categoria, data)
+    VALUES (?, ?, ?, ?)
+    """, (tipo, valor, categoria, data))
+
+    conexao.commit()
+    conexao.close()
+
+    print("Transação adicionada!")
+
+
+def listar_transacoes():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute("SELECT * FROM transacoes")
+    dados = cursor.fetchall()
+
+    for t in dados:
+        print(f"ID: {t[0]} | Tipo: {t[1]} | R$ {t[2]} | {t[3]} | {t[4]}")
+
+    conexao.close()
+
+
+def menu():
+    criar_tabela()
+
+    while True:
+        print("\n1 - Adicionar")
+        print("2 - Listar")
+        print("3 - Sair")
+        print("4 - Ver saldo")
+        print("5 - Filtrar por mês")
+
+        opcao = input("Escolha: ")
+
+        if opcao == "1":
+            adicionar_transacao()
+        elif opcao == "2":
+            listar_transacoes()
+        elif opcao == "3":
+            break
+        elif opcao == "4":
+            ver_saldo()
+        elif opcao == "5":
+            filtrar_por_mes()
+        else:
+            print("Opção inválida")
+
+def ver_saldo():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    # Soma das receitas
+    cursor.execute("""
+    SELECT SUM(valor) FROM transacoes WHERE tipo = 'receita'
+    """)
+    receitas = cursor.fetchone()[0]
+
+    # Soma das despesas
+    cursor.execute("""
+    SELECT SUM(valor) FROM transacoes WHERE tipo = 'despesa'
+    """)
+    despesas = cursor.fetchone()[0]
+
+    # Se não tiver valores, vira 0
+    receitas = receitas if receitas else 0
+    despesas = despesas if despesas else 0
+
+    saldo = receitas - despesas
+
+    print(f"\nTotal de receitas: R$ {receitas}")
+    print(f"Total de despesas: R$ {despesas}")
+    print(f"Saldo atual: R$ {saldo}")
+
+    conexao.close()
+
+def filtrar_por_mes():
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    mes = input("Digite o mês (YYYY-MM): ")
+
+    cursor.execute("""
+    SELECT * FROM transacoes
+    WHERE data LIKE ?
+    """, (mes + "%",))
+
+    dados = cursor.fetchall()
+
+    if not dados:
+        print("Nenhuma transação encontrada.")
+    else:
+        for transacao in dados:
+            print(transacao)
+
+    conexao.close()
+
+if __name__ == "__main__":
+    menu()
+    
+    
